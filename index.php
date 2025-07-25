@@ -1,7 +1,9 @@
 <?php
+include_once './inc/dd.php';
+
 function normalizeQuotes($line) {
     // Replace single quotes with double quotes
-    return str_replace("'", '"', $line);
+    return str_replace(["'", " "], ['"', ""], $line);
 }
 
 function isIgnoredLine($line) {
@@ -39,6 +41,7 @@ function processFile($filepath) {
     }
     
     $lines = file($filepath, FILE_IGNORE_NEW_LINES);
+
     $processedLines = [];
     $inBlockComment = false;
     
@@ -58,6 +61,7 @@ function processFile($filepath) {
         }
         
         if ($inBlockComment) {
+            $inBlockComment = false;
             continue;
         }
         
@@ -76,17 +80,13 @@ function compareFiles($file1Path, $file2Path) {
         $file1Lines = processFile($file1Path);
         $file2Lines = processFile($file2Path);
         
-        // Convert to sets for comparison
-        $set1 = array_flip($file1Lines);
-        $set2 = array_flip($file2Lines);
-        
         // Find common lines
-        $commonLines = array_intersect_key($set1, $set2);
+        $commonLines = array_intersect($file1Lines, $file2Lines);
         $commonCount = count($commonLines);
         
         // Find lines unique to each file
-        $uniqueToFile1 = array_diff_key($set1, $set2);
-        $uniqueToFile2 = array_diff_key($set2, $set1);
+        $uniqueToFile1 = array_diff($file1Lines, $file2Lines);
+        $uniqueToFile2 = array_diff($file2Lines, $file1Lines);
         
         return [
             'common' => $commonCount,
@@ -437,15 +437,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </tr>
                         <tr>
                             <td>Lines that are the same in both files</td>
-                            <td class="text-blue"><?php echo $result['common']; ?></td>
+                            <td class="text-red"><?php echo $result['common']; ?></td>
                         </tr>
                         <tr>
                             <td>Lines in New File that are not in Old File</td>
-                            <td class="text-red"><?php echo $result['unique_to_file1']; ?></td>
+                            <td class="text-blue"><?php echo $result['unique_to_file1']; ?></td>
                         </tr>
                         <tr>
                             <td>Lines in Old File that are not in New File</td>
-                            <td class="text-red"><?php echo $result['unique_to_file2']; ?></td>
+                            <td class="text-blue"><?php echo $result['unique_to_file2']; ?></td>
                         </tr>
                     </tbody>
                 </table>
